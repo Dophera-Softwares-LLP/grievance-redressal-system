@@ -6,7 +6,10 @@ const { Pool } = pkg;
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // required for DigitalOcean managed PG
+  ssl: {
+    require: true,                // ✅ explicitly require SSL
+    rejectUnauthorized: false,    // ✅ ignore DO’s self-signed cert
+  },
 });
 
 export async function testConnection() {
