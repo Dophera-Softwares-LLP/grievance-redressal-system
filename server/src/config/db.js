@@ -16,4 +16,4 @@ export async function testConnection() {
   } catch (err) {
     console.error("❌ Database connection failed:", err.message);
   }
-}rfvx
+}
