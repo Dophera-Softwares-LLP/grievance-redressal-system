@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'aawaz-media.blr1.cdn.digitaloceanspaces.com',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;
