@@ -40,10 +40,11 @@ export default function TicketForm({ onSubmit }) {
       delete payload.categoryName;
     }
 
-    // MVP: send only first file’s URL as attachmentUrl
+    // Send all file URLs as an array
     if (attachments.length) {
-      payload.attachmentUrl = attachments[0].fileUrl;
+      payload.attachments = attachments.map(a => a.fileUrl);
     }
+
 
     onSubmit(payload);
   };

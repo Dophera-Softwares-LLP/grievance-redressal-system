@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/rbac.middleware.js';
 import { ROLES } from '../config/roles.js';
 import { postTicket, getMy, getAssigned } from '../controllers/tickets.controller.js';
+import * as ticketsService from '../services/tickets.service.js';
 
 const r = Router();
 
@@ -11,7 +12,18 @@ r.get('/',  requireAuth, getMy);                               // student list
 r.get('/assigned', requireAuth, requireRole(
   ROLES.MENTOR, ROLES.WARDEN, ROLES.CHIEF_WARDEN, ROLES.COORDINATOR, ROLES.DEAN, ROLES.VC, ROLES.COUNCIL
 ), getAssigned);
+r.get("/:id", requireAuth, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
 
-// add: PUT /:id/resolve, /:id/escalate, /:id/transfer, /:id/extend-deadline
+    const ticket = await ticketsService.findByIdWithRelations(id, userId);
+    if (!ticket) return res.status(404).json({ message: "Ticket not found or unauthorized" });
+
+    res.json(ticket);
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default r;
