@@ -31,5 +31,7 @@ export async function getAssigned(req, res, next) {
   try {
     const data = await tickets.listAssignedToMe(req.user);
     res.json(data);
-  } catch (e) { next(e); }
+  } catch (err) {
+    next(err);
+  }
 }

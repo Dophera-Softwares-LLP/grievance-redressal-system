@@ -72,21 +72,57 @@ export async function getMyTickets(studentId, status) {
   return rows;
 }
 
-// 5️⃣ Get tickets assigned to a user (current assignee)
+// 5️⃣ Get tickets assigned to a user (direct or role-based visibility)
 export async function getAssignedTickets(userId) {
   const { rows } = await query(
     `
     SELECT 
-      t.*,
+      t.id,
+      t.title,
+      t.status,
+      t.updated_at,
+      ta.due_at,
       c.name AS category_name,
-      ta.due_at
+      s.name AS student_name,
+      s.roll_number AS student_roll
     FROM tickets t
-    JOIN ticket_assignments ta ON ta.ticket_id = t.id
-    LEFT JOIN categories c ON t.category_id = c.id
-    WHERE ta.user_id = $1 AND ta.is_current = true
+    JOIN ticket_assignments ta 
+      ON ta.ticket_id = t.id 
+      AND ta.is_current = true
+    LEFT JOIN categories c 
+      ON t.category_id = c.id
+    LEFT JOIN users s 
+      ON t.student_id = s.id
+    WHERE 
+      (
+        -- ✅ Case 1: the user is explicitly assigned
+        ta.user_id = $1
+        OR
+        -- ✅ Case 2: role-based visibility
+        ta.role_id IN (
+          SELECT ur.role_id
+          FROM user_roles ur
+          WHERE ur.user_id = $1
+            AND ur.role_id IN (
+              SELECT id FROM roles WHERE code IN (
+                'warden',
+                'chief_warden',
+                'mess_incharge',
+                'laundry_incharge',
+                'posh_committee',
+                'disciplinary_committee',
+                'transport_incharge',
+                'council',
+                'council_head',
+                'vc'
+              )
+            )
+        )
+      )
     ORDER BY ta.due_at ASC NULLS LAST
     `,
     [userId]
   );
+
   return rows;
 }

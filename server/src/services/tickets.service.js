@@ -93,6 +93,7 @@ export async function findByIdWithRelations(ticketId, userId) {
       u.name AS "studentName",
       a.name AS "assigneeName",
       ta.due_at,
+      ta.role_id AS "assigneeRoleId",
       t.student_id AS "studentId"
     FROM tickets t
     LEFT JOIN categories c ON t.category_id = c.id
@@ -107,14 +108,45 @@ export async function findByIdWithRelations(ticketId, userId) {
   const ticket = result.rows[0];
   if (!ticket) return null;
 
-  // Authorization: allow only the student or current assignee to view
-  if (ticket.studentId !== userId) {
-    const check = await pool.query(
-      `SELECT 1 FROM ticket_assignments WHERE ticket_id=$1 AND user_id=$2 AND is_current=true`,
-      [ticketId, userId]
-    );
-    if (!check.rowCount) return null;
+  // 2️⃣ Authorization logic
+  if (ticket.studentId === userId) {
+    // ✅ Student who created the ticket can view
+    return ticket;
   }
 
-  return ticket;
+  // 3️⃣ Check if user is directly assigned
+  const directCheck = await pool.query(
+    `SELECT 1 FROM ticket_assignments WHERE ticket_id=$1 AND user_id=$2 AND is_current=true`,
+    [ticketId, userId]
+  );
+  if (directCheck.rowCount) return ticket;
+
+  // 4️⃣ Check if user has a shared-view role for this ticket
+  const sharedCheck = await pool.query(
+    `
+    SELECT 1
+    FROM user_roles ur
+    JOIN roles r ON r.id = ur.role_id
+    WHERE ur.user_id = $1
+      AND ur.role_id = $2
+      AND r.code IN (
+        'warden',
+        'chief_warden',
+        'mess_incharge',
+        'laundry_incharge',
+        'posh_committee',
+        'disciplinary_committee',
+        'transport_incharge',
+        'council',
+        'council_head',
+        'vc'
+      )
+    `,
+    [userId, ticket.assigneeRoleId]
+  );
+
+  if (sharedCheck.rowCount) return ticket;
+
+  // ❌ If none matched, deny access
+  return null;
 }

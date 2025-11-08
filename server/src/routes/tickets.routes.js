@@ -9,9 +9,20 @@ const r = Router();
 
 r.post('/', requireAuth, postTicket);                          // student creates
 r.get('/',  requireAuth, getMy);                               // student list
-r.get('/assigned', requireAuth, requireRole(
-  ROLES.MENTOR, ROLES.WARDEN, ROLES.CHIEF_WARDEN, ROLES.COORDINATOR, ROLES.DEAN, ROLES.VC, ROLES.COUNCIL
-), getAssigned);
+r.get(
+  '/assigned',
+  requireAuth,
+  requireRole(
+    ROLES.MENTOR,
+    ROLES.WARDEN,
+    ROLES.CHIEF_WARDEN,
+    ROLES.COORDINATOR,
+    ROLES.DEAN,
+    ROLES.VC,
+    ROLES.COUNCIL
+  ),
+  getAssigned
+);
 r.get("/:id", requireAuth, async (req, res, next) => {
   try {
     const { id } = req.params;
