@@ -35,3 +35,34 @@ export async function getAssigned(req, res, next) {
     next(err);
   }
 }
+
+export async function commentOnTicket(req, res, next) {
+  try {
+    const id = parseInt(req.params.id);
+    const updated = await tickets.commentOnTicket(req.user, id, req.body);
+    res.json(updated);
+  } catch (err) { next(err); }
+}
+
+export async function resolveTicket(req, res, next) {
+  try {
+    const id = parseInt(req.params.id);
+    const updated = await tickets.resolveTicket(req.user, id, req.body);
+    res.json(updated);
+  } catch (err) { next(err); }
+}
+
+export async function escalateTicket(req, res, next) {
+  try {
+    const id = parseInt(req.params.id);
+    const updated = await tickets.escalateTicket(req.user, id, req.body);
+    res.json(updated);
+  } catch (err) { next(err); }
+}
+
+export async function getAllByAuthority(req, res, next) {
+  try {
+    const data = await tickets.listAllByAuthority(req.user);
+    res.json(data);
+  } catch (err) { next(err); }
+}

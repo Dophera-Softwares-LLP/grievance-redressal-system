@@ -6,12 +6,59 @@ import {
 } from '@mui/material';
 import { TicketsAPI } from '../../../services/tickets';
 import Image from 'next/image';
+import AttachmentUploader from '../../../components/tickets/AttachmentUploader';
+import { api } from '../../../lib/http';
+import { TextField } from '@mui/material';
+
 
 export default function TicketDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [comment, setComment] = useState('');
+  const [attachments, setAttachments] = useState([]);
+  const [acting, setActing] = useState(false);
+  const [role, setRole] = useState('student');
+
+  // Load the current user's role once
+  useEffect(() => {
+    api.get('/users/me')
+      .then(res => setRole(res.data?.role || 'student'))
+      .catch(() => setRole('student'));
+  }, []);
+
+  async function handleResolve() {
+    if (!comment.trim()) return alert('Please add a comment before resolving.');
+    setActing(true);
+    try {
+      await api.put(`/tickets/${id}/resolve`, {
+        comment,
+        attachments: attachments.map(a => a.fileUrl || a.url),
+      });
+      alert('Ticket resolved successfully!');
+      router.push('/dashboard');
+    } finally {
+      setActing(false);
+    }
+  }
+
+  async function handleEscalate() {
+    if (!comment.trim()) return alert('Please add a reason for escalation.');
+    setActing(true);
+    try {
+      await api.put(`/tickets/${id}/escalate`, {
+        comment,
+        attachments: attachments.map(a => a.fileUrl || a.url),
+      });
+      alert('Ticket escalated successfully!');
+      router.push('/dashboard');
+    } finally {
+      setActing(false);
+    }
+  }
+
+
 
   useEffect(() => {
     if (!id) return;
@@ -85,7 +132,47 @@ export default function TicketDetailsPage() {
                   )}
               </>
             )}
+            {/* 👇 Show only for authority users */}
+            {role !== 'student' && ticket.status !== 'resolved' && (
+              <>
+                <Divider />
 
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Add Comment / Attachments
+                </Typography>
+
+                <Stack spacing={2}>
+                  <TextField
+                    label="Comment"
+                    multiline
+                    minRows={3}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                  />
+
+                  <AttachmentUploader value={attachments} onChange={setAttachments} />
+
+                  <Stack direction="row" spacing={2}>
+                    <Button
+                      onClick={handleEscalate}
+                      variant="outlined"
+                      color="warning"
+                      disabled={acting}
+                    >
+                      Escalate
+                    </Button>
+                    <Button
+                      onClick={handleResolve}
+                      variant="contained"
+                      color="success"
+                      disabled={acting}
+                    >
+                      Resolve
+                    </Button>
+                  </Stack>
+                </Stack>
+              </>
+            )}
             <Divider />
             <Button variant="outlined" onClick={() => router.push('/dashboard')}>
               Back to Dashboard

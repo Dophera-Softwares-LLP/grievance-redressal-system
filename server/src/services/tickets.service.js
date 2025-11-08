@@ -1,4 +1,4 @@
-import { pool } from '../config/db.js';
+import { pool,query  } from '../config/db.js';
 import { getCategoryIdByName } from '../data/categories.repo.js';
 import {
   insertTicket,
@@ -7,7 +7,7 @@ import {
   getMyTickets,
   getAssignedTickets
 } from '../data/tickets.repo.js';
-
+import { ESCALATION } from '../config/escalation-map.js';
 import { pickInitialAssignee, computeDueAt } from './escalation.service.js';
 
 export async function createTicketForStudent(user, payload) {
@@ -149,4 +149,127 @@ export async function findByIdWithRelations(ticketId, userId) {
 
   // ❌ If none matched, deny access
   return null;
+}
+
+export async function commentOnTicket(user, ticketId, payload) {
+  const { comment, attachments = [] } = payload;
+
+  await query('BEGIN');
+  try {
+    if (comment) {
+      await query(
+        `INSERT INTO ticket_comments (ticket_id, user_id, comment) VALUES ($1, $2, $3)`,
+        [ticketId, user.id, comment]
+      );
+    }
+    for (const url of attachments) {
+      await query(
+        `INSERT INTO attachments (ticket_id, uploaded_by, url, kind)
+         VALUES ($1, $2, $3, 'comment')`,
+        [ticketId, user.id, url]
+      );
+    }
+    await query('COMMIT');
+  } catch (e) {
+    await query('ROLLBACK');
+    throw e;
+  }
+
+  return { success: true };
+}
+
+export async function resolveTicket(user, ticketId, payload) {
+  const { comment, attachments = [] } = payload;
+
+  await query('BEGIN');
+  try {
+    // Add comment before resolving
+    await commentOnTicket(user, ticketId, { comment, attachments });
+
+    // Mark as resolved
+    await query(`UPDATE tickets SET status='resolved', resolved_at=NOW(), updated_at=NOW() WHERE id=$1`, [ticketId]);
+    await query(`UPDATE ticket_assignments SET is_current=false, ended_at=NOW() WHERE ticket_id=$1 AND is_current=true`, [ticketId]);
+
+    await query('COMMIT');
+  } catch (e) {
+    await query('ROLLBACK');
+    throw e;
+  }
+  return { message: 'Ticket resolved successfully' };
+}
+
+
+
+export async function escalateTicket(user, ticketId, payload) {
+  const { comment, attachments = [] } = payload;
+
+  const { rows: ticketRows } = await query('SELECT * FROM tickets WHERE id=$1', [ticketId]);
+  const ticket = ticketRows[0];
+  if (!ticket) throw new Error('Ticket not found');
+
+  // Add comment before escalation
+  await commentOnTicket(user, ticketId, { comment, attachments });
+
+  // Determine next role via category
+  const { rows: catRows } = await query('SELECT name FROM categories WHERE id=$1', [ticket.category_id]);
+  const categoryName = catRows[0]?.name;
+  const chain = ESCALATION[categoryName] || [];
+
+  const { rows: current } = await query(
+    'SELECT * FROM ticket_assignments WHERE ticket_id=$1 AND is_current=true AND user_id=$2',
+    [ticketId, user.id]
+  );
+  if (!current.length) throw new Error('Not current assignee');
+
+  const currentRole = current[0].role_id;
+
+  // map role IDs -> codes (simplified assumption)
+  const { rows: roles } = await query('SELECT * FROM roles ORDER BY id');
+  const map = Object.fromEntries(roles.map(r => [r.id, r.code]));
+  const reverse = Object.fromEntries(roles.map(r => [r.code, r.id]));
+
+  const nextRoleCode = chain[chain.indexOf(map[currentRole]) + 1];
+  if (!nextRoleCode) throw new Error('No higher authority to escalate to');
+
+  const nextRoleId = reverse[nextRoleCode];
+
+  await query('BEGIN');
+  try {
+    await query(`UPDATE ticket_assignments SET is_current=false, ended_at=NOW() WHERE ticket_id=$1 AND is_current=true`, [ticketId]);
+    await query(
+      `INSERT INTO ticket_assignments (ticket_id, role_id, action, due_at, started_at, is_current)
+       VALUES ($1,$2,'escalate',$3,NOW(),true)`,
+      [ticketId, nextRoleId, computeDueAt()]
+    );
+    await query(`UPDATE tickets SET status='in_progress', updated_at=NOW() WHERE id=$1`, [ticketId]);
+    await query('COMMIT');
+  } catch (e) {
+    await query('ROLLBACK');
+    throw e;
+  }
+
+  return { message: 'Ticket escalated successfully' };
+}
+
+// 🧩 list all tickets ever assigned to the authority
+export async function listAllByAuthority(user) {
+  const { rows } = await query(`
+    SELECT 
+      t.id,
+      t.title,
+      t.status,
+      t.updated_at,
+      ta.due_at,
+      c.name AS category_name,
+      s.name AS student_name,
+      s.roll_number AS student_roll
+    FROM tickets t
+    JOIN ticket_assignments ta ON ta.ticket_id = t.id
+    LEFT JOIN categories c ON t.category_id = c.id
+    LEFT JOIN users s ON t.student_id = s.id
+    WHERE ta.user_id = $1
+    ORDER BY t.updated_at DESC
+  `, [user.id]);
+  
+  return rows;
 }

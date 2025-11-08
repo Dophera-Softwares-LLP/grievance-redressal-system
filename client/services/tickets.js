@@ -4,5 +4,6 @@ export const TicketsAPI = {
   create: (payload) => api.post('/tickets', payload).then(r => r.data),
   mine:   (status)  => api.get('/tickets', { params: { status } }).then(r => r.data),
   assigned: ()      => api.get('/tickets/assigned').then(r => r.data),
+  assignedAll: () => api.get('/tickets/assigned/all').then(r => r.data),
   getById: (id) => api.get(`/tickets/${id}`).then(r => r.data),
 };

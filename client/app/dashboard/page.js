@@ -13,6 +13,7 @@ import {
 import { useRouter } from "next/navigation";
 import { TicketsAPI } from "../../services/tickets";
 import Lottie from "lottie-react";
+import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import welcomeAnim from "../../public/Welcome.json"; // move your uploaded json into /public
 import { api } from "../../lib/http";
 
@@ -22,6 +23,8 @@ export default function DashboardPage() {
   const [recent, setRecent] = useState(null);
   const [role, setRole] = useState('student'); 
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");   // filter by ticket status
+  const [sortBy, setSortBy] = useState("recent"); // sorting preference
 
   useEffect(() => {
     async function load() {
@@ -46,7 +49,7 @@ export default function DashboardPage() {
           setTickets(data || []);
           if (data?.length) setRecent(data[0]); // newest first
         } else {
-          const data = await TicketsAPI.assigned();
+          const data = await TicketsAPI.assignedAll();
           setTickets(data || []);
           if (data?.length) setRecent(data[0]);
         }
@@ -134,6 +137,43 @@ export default function DashboardPage() {
           </Button>
         )}
       </Stack>
+      {/* Filters (only for authorities) */}
+      {role !== "student" && (
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          sx={{ mb: 3, alignItems: "center" }}
+        >
+          {/* Filter by status */}
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Status</InputLabel>
+            <Select
+              value={filter}
+              label="Status"
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <MenuItem value="all">All Tickets</MenuItem>
+              <MenuItem value="open">Pending / Open</MenuItem>
+              <MenuItem value="resolved">Resolved</MenuItem>
+              <MenuItem value="escalated">Escalated</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* Sort by date */}
+          <FormControl sx={{ minWidth: 200 }}>
+            <InputLabel>Sort By</InputLabel>
+            <Select
+              value={sortBy}
+              label="Sort By"
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <MenuItem value="recent">Most Recent</MenuItem>
+              <MenuItem value="oldest">Oldest First</MenuItem>
+              <MenuItem value="dueSoon">Due Soon</MenuItem>
+            </Select>
+          </FormControl>
+        </Stack>
+      )}
 
       {/* Recent Ticket Summary */}
       {recent && (
@@ -185,7 +225,19 @@ export default function DashboardPage() {
       </Typography>
 
       <Stack spacing={2}>
-        {tickets.slice(1).map((t) => (
+      {tickets
+        // 1️⃣ Filter tickets by status
+        .filter((t) => filter === "all" || t.status === filter)
+        // 2️⃣ Sort tickets by preference
+        .sort((a, b) => {
+          if (sortBy === "recent") return new Date(b.updated_at) - new Date(a.updated_at);
+          if (sortBy === "oldest") return new Date(a.updated_at) - new Date(b.updated_at);
+          if (sortBy === "dueSoon") return new Date(a.due_at) - new Date(b.due_at);
+          return 0;
+        })
+        // 3️⃣ Skip the first (recent) ticket and render the rest
+        .slice(1)
+        .map((t) => (
           <Card
             key={t.id}
             sx={{ p: 2, borderRadius: 2, cursor: "pointer" }}
@@ -212,12 +264,10 @@ export default function DashboardPage() {
             </Stack>
 
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-              {/* Category chip */}
               {t.category_name && (
                 <Chip label={t.category_name} color="primary" size="small" />
               )}
 
-              {/* Due date chip */}
               {t.due_at && (
                 <Chip
                   label={`Due: ${new Date(t.due_at).toLocaleString()}`}
@@ -226,7 +276,6 @@ export default function DashboardPage() {
                 />
               )}
 
-              {/* Show student chip only for authority view */}
               {role !== "student" && (t.student_name || t.roll_number) && (
                 <Chip
                   label={t.student_name ? t.student_name : t.roll_number}
@@ -237,7 +286,7 @@ export default function DashboardPage() {
             </Stack>
           </Card>
         ))}
-      </Stack>
+    </Stack>
     </Box>
   );
 
