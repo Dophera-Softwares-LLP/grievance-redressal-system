@@ -95,20 +95,20 @@ export default function LoginPage() {
             padding: "50px 60px",
             color: "#fff",
 
-            /* PREMIUM GLOW LAYER */
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: "45%",
-              borderRadius: "20px",
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.15), transparent)",
-              pointerEvents: "none",
-              zIndex: -1,
-            },
+            // /* PREMIUM GLOW LAYER */
+            // "&::before": {
+            //   content: '""',
+            //   position: "absolute",
+            //   top: 0,
+            //   left: 0,
+            //   right: 0,
+            //   height: "45%",
+            //   borderRadius: "20px",
+            //   background:
+            //     "linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.15), transparent)",
+            //   pointerEvents: "none",
+            //   zIndex: -1,
+            // },
 
             /* OPTIONAL Subtle outer glow */
             "&::after": {
