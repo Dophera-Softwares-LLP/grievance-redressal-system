@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import LiquidEther from './LiquidEther';
 import { Box, Button, Typography, CircularProgress } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -34,141 +35,132 @@ export default function LoginPage() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1E3C72, #2A5298)',
-        color: '#fff',
-        position: 'relative',
-        overflow: 'hidden',
+        minHeight: "100vh",
+        width: "100vw",
+        position: "relative",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
-      {/* 🔹 Animated background shapes */}
-      <motion.div
-        animate={{
-          x: [0, 50, 0],
-          y: [0, -50, 0],
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.6, 0.3],
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position: 'absolute',
-          top: '20%',
-          left: '10%',
-          width: 150,
-          height: 150,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle at center, #00c6ff, transparent 70%)',
-          filter: 'blur(40px)',
-        }}
-      />
-      <motion.div
-        animate={{
-          x: [0, -80, 0],
-          y: [0, 60, 0],
-          scale: [1.1, 0.9, 1.1],
-          opacity: [0.4, 0.7, 0.4],
-        }}
-        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        style={{
-          position: 'absolute',
-          bottom: '15%',
-          right: '15%',
-          width: 180,
-          height: 180,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle at center, #ff6bcb, transparent 70%)',
-          filter: 'blur(50px)',
-        }}
-      />
-
-      {/* 🔹 Top-right heading */}
+      {/* 🔵 Liquid Ether Background */}
       <Box
         sx={{
-          position: 'absolute',
-          top: 25,
-          right: 40,
-          textAlign: 'right',
+          position: "absolute",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none", 
         }}
       >
+        <LiquidEther
+          colors={["#5227FF", "#FF9FFC", "#B19EEF"]}
+          mouseForce={20}
+          cursorSize={100}
+          isViscous={false}
+          viscous={30}
+          iterationsViscous={32}
+          iterationsPoisson={32}
+          resolution={0.5}
+          isBounce={false}
+          autoDemo={true}
+          autoSpeed={0.5}
+          autoIntensity={2.2}
+          takeoverDuration={0.25}
+          autoResumeDelay={1000}
+          autoRampDuration={0.6}
+          style={{
+            width: "100%",
+            height: "100%",
+            position: "absolute",
+          }}
+        />
+      </Box>
+
+      {/* 🔵 UI CONTENT (foreground) */}
+        <Box
+          sx={{
+            position: "relative",
+            zIndex: 10,
+            pointerEvents: "auto",
+            textAlign: "center",
+
+            /* GLASS PANEL */
+            background: "rgba(255, 255, 255, 0.15)",
+            backdropFilter: "blur(20px) saturate(180%)",
+            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            borderRadius: "20px",
+            border: "1px solid rgba(255, 255, 255, 0.28)",
+            boxShadow: "0 10px 40px rgba(0, 0, 0, 0.35)",
+            padding: "50px 60px",
+            color: "#fff",
+
+            /* PREMIUM GLOW LAYER */
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "45%",
+              borderRadius: "20px",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0.15), transparent)",
+              pointerEvents: "none",
+              zIndex: -1,
+            },
+
+            /* OPTIONAL Subtle outer glow */
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              inset: -4,
+              borderRadius: "22px",
+              background:
+                "radial-gradient(closest-side, rgba(255,255,255,0.18), transparent)",
+              zIndex: -2,
+              pointerEvents: "none",
+            },
+          }}
+        >
         <Typography
           variant="h4"
           sx={{
-            fontWeight: 'bold',
-            lineHeight: 1.2,
-          }}
-        >
-          Aawaz
-        </Typography>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontStyle: 'italic',
-            color: 'rgba(252, 248, 250, 0.8)',
-          }}
-        >
-          Bridging Voices and Solutions
-        </Typography>
-      </Box>
-
-      {/* 🔹 Main login card */}
-      <motion.div
-        initial={{ opacity: 0, y: -30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-        style={{
-          textAlign: 'center',
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          padding: '50px 60px',
-          borderRadius: '16px',
-          boxShadow: '0px 8px 25px rgba(0,0,0,0.3)',
-          zIndex: 2,
-        }}
-      >
-        <Typography
-          variant="h5"
-          sx={{
+            fontWeight: "bold",
             mb: 2,
-            fontWeight: 'bold',
-            letterSpacing: '0.5px',
+            background: "linear-gradient(90deg, #00c6ff, #0072ff)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           }}
         >
           Log-In to Aawaz
         </Typography>
 
-        {/* 🔹 Animated bar under title */}
         <motion.div
           initial={{ width: 0 }}
-          animate={{ width: '100%' }}
-          transition={{ duration: 1.2, ease: 'easeInOut' }}
+          animate={{ width: "100%" }}
+          transition={{ duration: 1.2 }}
           style={{
-            height: '3px',
-            background: 'linear-gradient(90deg, #00c6ff, #0072ff)',
-            marginBottom: '30px',
-            borderRadius: '2px',
+            height: "3px",
+            background: "linear-gradient(90deg, #00c6ff, #0072ff)",
+            marginBottom: "30px",
+            borderRadius: "2px",
           }}
         />
 
-        {/* 🔹 Button with animation */}
         <motion.div whileHover={{ scale: 1.05 }}>
           <Button
             variant="contained"
             onClick={handleLogin}
             disabled={loading}
             sx={{
-              backgroundColor: '#0a72c2ff',
-              color: '#fff',
-              fontSize: '1rem',
+              backgroundColor: "#0a72c2ff",
+              color: "#fff",
+              fontSize: "1rem",
               px: 4,
               py: 1.5,
-              borderRadius: '10px',
-              textTransform: 'none',
-              '&:hover': {
-                backgroundColor: '#1478c5ff',
-                boxShadow: '0px 0px 10px rgba(255,255,255,0.3)',
-              },
+              borderRadius: "10px",
+              textTransform: "none",
             }}
           >
             {loading ? (
@@ -177,11 +169,12 @@ export default function LoginPage() {
                 Signing in…
               </>
             ) : (
-              'Sign in with Microsoft'
+              "Sign in with Microsoft"
             )}
           </Button>
         </motion.div>
-      </motion.div>
+      </Box>
     </Box>
   );
+
 }
