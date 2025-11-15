@@ -9,6 +9,7 @@ import Image from 'next/image';
 import AttachmentUploader from '../../../components/tickets/AttachmentUploader';
 import { api } from '../../../lib/http';
 import { TextField } from '@mui/material';
+import { onAuth } from '../../../lib/firebase.client';
 
 
 export default function TicketDetailsPage() {
@@ -24,11 +25,6 @@ export default function TicketDetailsPage() {
   const [viewerIndex, setViewerIndex] = useState(0);
 
   // Load the current user's role once
-  useEffect(() => {
-    api.get('/users/me')
-      .then(res => setRole(res.data?.role || 'student'))
-      .catch(() => setRole('student'));
-  }, []);
 
   async function handleResolve() {
     if (!comment.trim()) return alert('Please add a comment before resolving.');
@@ -60,17 +56,32 @@ export default function TicketDetailsPage() {
     }
   }
 
-
-
   useEffect(() => {
-    if (!id) return;
-    TicketsAPI.getById(id)
-      .then(setTicket)
-      .catch(err => {
-        console.error('Failed to load ticket', err);
-        router.push('/dashboard');
-      })
-      .finally(() => setLoading(false));
+    let unsub = onAuth(async (fbUser) => {
+      if (!fbUser) {
+        // user not logged in → redirect to login
+        router.push('/login');
+        return;
+      }
+
+      try {
+        // Wait for backend to recognise the firebase user
+        const me = await api.get('/users/me').then(r => r.data);
+        const myRole = me?.role || 'student';
+        setRole(myRole);
+
+        // NOW it is safe to fetch ticket
+        const data = await TicketsAPI.getById(id);
+        setTicket(data);
+      } catch (err) {
+        console.error("Error loading ticket:", err);
+        router.push('/dashboard');   // fallback only if real error
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    return () => unsub();
   }, [id, router]);
 
   if (loading) {
