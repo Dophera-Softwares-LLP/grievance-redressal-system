@@ -91,15 +91,29 @@ export async function findByIdWithRelations(ticketId, userId) {
       t.resolved_at,
       c.name AS "categoryName",
       u.name AS "studentName",
-      a.name AS "assigneeName",
-      ta.due_at,
-      ta.role_id AS "assigneeRoleId",
+
+      -- latest assignment (not only current)
+      last_a.name AS "assigneeName",
+      last_ta.due_at,
+      last_ta.role_id AS "assigneeRoleId",
+
       t.student_id AS "studentId"
     FROM tickets t
     LEFT JOIN categories c ON t.category_id = c.id
     LEFT JOIN users u ON t.student_id = u.id
-    LEFT JOIN ticket_assignments ta ON ta.ticket_id = t.id AND ta.is_current = true
-    LEFT JOIN users a ON ta.user_id = a.id
+
+    -- 👇 NEW: latest assignment, even if resolved or old
+    LEFT JOIN LATERAL (
+      SELECT ta.*
+      FROM ticket_assignments ta
+      WHERE ta.ticket_id = t.id
+      ORDER BY ta.started_at DESC
+      LIMIT 1
+    ) AS last_ta ON TRUE
+
+    -- 👇 NEW: latest assignee user
+    LEFT JOIN users last_a ON last_ta.user_id = last_a.id
+
     WHERE t.id = $1
     `,
     [ticketId]
@@ -107,6 +121,18 @@ export async function findByIdWithRelations(ticketId, userId) {
 
   const ticket = result.rows[0];
   if (!ticket) return null;
+  
+  const attachmentsRes = await pool.query(
+    `
+    SELECT id, url, kind, uploaded_by, created_at
+    FROM attachments
+    WHERE ticket_id = $1
+    ORDER BY created_at ASC
+    `,
+    [ticketId]
+  );
+  ticket.attachments = attachmentsRes.rows;
+
 
   // 2️⃣ Authorization logic
   if (ticket.studentId === userId) {
@@ -116,7 +142,7 @@ export async function findByIdWithRelations(ticketId, userId) {
 
   // 3️⃣ Check if user is directly assigned
   const directCheck = await pool.query(
-    `SELECT 1 FROM ticket_assignments WHERE ticket_id=$1 AND user_id=$2 AND is_current=true`,
+    `SELECT 1 FROM ticket_assignments WHERE ticket_id = $1 AND user_id = $2 LIMIT 1`,
     [ticketId, userId]
   );
   if (directCheck.rowCount) return ticket;

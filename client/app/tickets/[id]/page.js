@@ -83,6 +83,12 @@ export default function TicketDetailsPage() {
     return <Typography align="center">Ticket not found.</Typography>;
   }
 
+  // Filter only the original ticket attachments (not comment ones)
+  const ticketFiles = Array.isArray(ticket.attachments)
+    ? ticket.attachments.filter(a => a.kind === 'ticket')
+    : [];
+
+
   return (
     <Box sx={{ py: 6, px: { xs: 2, md: 6 } }}>
       <Card elevation={6} sx={{ borderRadius: 3, maxWidth: 900, mx: 'auto' }}>
@@ -107,29 +113,48 @@ export default function TicketDetailsPage() {
               )}
             </Stack>
 
-            {ticket.attachmentUrl && (
+            {ticketFiles.length > 0 && (
               <>
                 <Divider />
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>Attachment / Proof</Typography>
-                {ticket.attachmentUrl.match(/\.(mp4|webm|mov)$/)
-                  ? (
-                    <video
-                      src={ticket.attachmentUrl}
-                      controls
-                      style={{ width: '100%', borderRadius: 12, marginTop: 12 }}
-                    />
-                  )
-                  : (
-                    <Box sx={{ position: 'relative', width: '100%', height: 400, borderRadius: 2, overflow: 'hidden', mt: 2 }}>
-                      <Image
-                        src={ticket.attachmentUrl}
-                        alt="Attachment"
-                        fill
-                        sizes="(max-width: 900px) 100vw, 900px"
-                        style={{ objectFit: 'contain' }}
-                      />
-                    </Box>
-                  )}
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Attachments / Proof
+                </Typography>
+
+                <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', mt: 2 }}>
+                  {ticketFiles.map((file) => {
+                    const isVideo = file.url.match(/\.(mp4|webm|mov)$/i);
+
+                    return (
+                      <Box
+                        key={file.id}
+                        sx={{
+                          position: 'relative',
+                          width: isVideo ? 260 : 200,
+                          height: isVideo ? 160 : 150,
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          boxShadow: 2,
+                        }}
+                      >
+                        {isVideo ? (
+                          <video
+                            src={file.url}
+                            controls
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <Image
+                            src={file.url}
+                            alt="Attachment"
+                            fill
+                            sizes="(max-width: 900px) 100vw, 260px"
+                            style={{ objectFit: 'cover' }}
+                          />
+                        )}
+                      </Box>
+                    );
+                  })}
+                </Stack>
               </>
             )}
             {/* 👇 Show only for authority users */}
