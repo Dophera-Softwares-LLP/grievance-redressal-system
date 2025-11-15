@@ -20,6 +20,8 @@ export default function TicketDetailsPage() {
   const [attachments, setAttachments] = useState([]);
   const [acting, setActing] = useState(false);
   const [role, setRole] = useState('student');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   // Load the current user's role once
   useEffect(() => {
@@ -88,6 +90,22 @@ export default function TicketDetailsPage() {
     ? ticket.attachments.filter(a => a.kind === 'ticket')
     : [];
 
+  function openViewer(index) {
+    setViewerIndex(index);
+    setViewerOpen(true);
+  }
+
+  function closeViewer() {
+    setViewerOpen(false);
+  }
+
+  function showNext() {
+    setViewerIndex((prev) => (prev + 1) % ticketFiles.length);
+  }
+
+  function showPrev() {
+    setViewerIndex((prev) => (prev - 1 + ticketFiles.length) % ticketFiles.length);
+  }
 
   return (
     <Box sx={{ py: 6, px: { xs: 2, md: 6 } }}>
@@ -121,13 +139,15 @@ export default function TicketDetailsPage() {
                 </Typography>
 
                 <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', mt: 2 }}>
-                  {ticketFiles.map((file) => {
+                  {ticketFiles.map((file, index) => {
                     const isVideo = file.url.match(/\.(mp4|webm|mov)$/i);
 
                     return (
                       <Box
                         key={file.id}
+                        onClick={() => openViewer(index)}
                         sx={{
+                          cursor: 'pointer',
                           position: 'relative',
                           width: isVideo ? 260 : 200,
                           height: isVideo ? 160 : 150,
@@ -205,6 +225,91 @@ export default function TicketDetailsPage() {
           </Stack>
         </CardContent>
       </Card>
+      {viewerOpen && (
+        <Box
+          onClick={closeViewer}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Box
+            onClick={(e) => e.stopPropagation()}
+            sx={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '85vh',
+            }}
+          >
+            {ticketFiles[viewerIndex].url.match(/\.(mp4|webm|mov)$/i) ? (
+              <video
+                src={ticketFiles[viewerIndex].url}
+                controls
+                autoPlay
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '85vh',
+                  borderRadius: 12,
+                }}
+              />
+            ) : (
+              <Image
+                src={ticketFiles[viewerIndex].url}
+                alt="View Attachment"
+                width={900}
+                height={600}
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '85vh',
+                  objectFit: 'contain',
+                  borderRadius: 12,
+                }}
+              />
+            )}
+
+            {/* LEFT ARROW */}
+            <Button
+              onClick={showPrev}
+              sx={{
+                position: 'absolute',
+                left: -60,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'white',
+                fontSize: 40,
+                minWidth: 0,
+              }}
+            >
+              ‹
+            </Button>
+
+            {/* RIGHT ARROW */}
+            <Button
+              onClick={showNext}
+              sx={{
+                position: 'absolute',
+                right: -60,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: 'white',
+                fontSize: 40,
+                minWidth: 0,
+              }}
+            >
+              ›
+            </Button>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }
