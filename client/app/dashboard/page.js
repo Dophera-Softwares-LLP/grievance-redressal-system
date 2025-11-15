@@ -16,6 +16,7 @@ import Lottie from "lottie-react";
 import { FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import welcomeAnim from "../../public/Welcome.json"; // move your uploaded json into /public
 import { api } from "../../lib/http";
+import { onAuth } from "../../lib/firebase.client";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -27,42 +28,37 @@ export default function DashboardPage() {
   const [sortBy, setSortBy] = useState("recent"); // sorting preference
 
   useEffect(() => {
-    async function load() {
+    let unsub = onAuth(async (fbUser) => {
+      if (!fbUser) {
+        setLoading(false);
+        setTickets([]);
+        return;
+      }
       try {
-        // Try to detect role; fallback to 'student' if endpoint not present
-        let meRole = 'student';
-        try {
-          try {
-            const me = await api.get('/users/me').then(r => r.data);
-            if (me?.role) meRole = me.role;
-          } catch (err) {
-            console.warn("Could not fetch /users/me", err);
-          }
-        } catch (_) {
-          // ignore; keep default
-        }
-        setRole(meRole);
+        // get role from backend AFTER firebase auth is ready
+        const me = await api.get("/users/me").then((r) => r.data);
+        const role = me?.role || "student";
+        setRole(role);
 
-        // Fetch tickets based on role
-        if (meRole === 'student') {
-          const data = await TicketsAPI.mine();
-          setTickets(data || []);
-          if (data?.length) setRecent(data[0]); // newest first
+        let data;
+        if (role === "student") {
+          data = await TicketsAPI.mine();
         } else {
-          const data = await TicketsAPI.assignedAll();
-          setTickets(data || []);
-          if (data?.length) setRecent(data[0]);
+          data = await TicketsAPI.assignedAll();
         }
+        setTickets(data || []);
+        if (data?.length) setRecent(data[0]);
       } catch (err) {
-        console.error(err);
+        console.error("Error loading dashboard:", err);
         setTickets([]);
       } finally {
         setLoading(false);
       }
-    }
+    });
 
-    load();
+    return () => unsub();
   }, []);
+
 
   // --- Loading / empty state ---
   if (loading || tickets === null) {
