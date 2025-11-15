@@ -121,7 +121,7 @@ export async function findByIdWithRelations(ticketId, userId) {
 
   const ticket = result.rows[0];
   if (!ticket) return null;
-  
+
   const attachmentsRes = await pool.query(
     `
     SELECT id, url, kind, uploaded_by, created_at
@@ -133,6 +133,42 @@ export async function findByIdWithRelations(ticketId, userId) {
   );
   ticket.attachments = attachmentsRes.rows;
 
+  // ⬇ Load all comments on this ticket with author info
+  const commentsRes = await pool.query(
+    `
+    SELECT
+      tc.id,
+      tc.comment,
+      tc.action_type,
+      tc.created_at,
+      u.name AS user_name,
+      r.name AS role_name
+    FROM ticket_comments tc
+    JOIN users u ON u.id = tc.user_id
+    LEFT JOIN user_roles ur ON ur.user_id = u.id
+    LEFT JOIN roles r ON r.id = ur.role_id
+    WHERE tc.ticket_id = $1
+    ORDER BY tc.created_at ASC
+    `,
+    [ticketId]
+  );
+
+  ticket.comments = commentsRes.rows;
+
+  // ⬇ Load attachments for each comment
+  for (const c of ticket.comments) {
+    const ca = await pool.query(
+      `
+      SELECT id, url, created_at
+      FROM attachments
+      WHERE comment_id = $1 AND kind = 'comment'
+      ORDER BY created_at ASC
+      `,
+      [c.id]
+    );
+
+    c.attachments = ca.rows;
+  }
 
   // 2️⃣ Authorization logic
   if (ticket.studentId === userId) {
@@ -182,26 +218,31 @@ export async function commentOnTicket(user, ticketId, payload) {
 
   await query('BEGIN');
   try {
+    let commentId = null;
     if (comment) {
-      await query(
-        `INSERT INTO ticket_comments (ticket_id, user_id, comment) VALUES ($1, $2, $3)`,
+      const { rows } = await query(
+        `INSERT INTO ticket_comments (ticket_id, user_id, comment, action_type)
+         VALUES ($1, $2, $3, 'comment')
+         RETURNING id`,
         [ticketId, user.id, comment]
       );
+      commentId = rows[0].id;
     }
+
+    // Insert attachments with correct comment_id
     for (const url of attachments) {
       await query(
-        `INSERT INTO attachments (ticket_id, uploaded_by, url, kind)
-         VALUES ($1, $2, $3, 'comment')`,
-        [ticketId, user.id, url]
+        `INSERT INTO attachments (ticket_id, comment_id, uploaded_by, url, kind)
+         VALUES ($1, $2, $3, $4, 'comment')`,
+        [ticketId, commentId, user.id, url]
       );
     }
     await query('COMMIT');
+    return { success: true };
   } catch (e) {
     await query('ROLLBACK');
     throw e;
   }
-
-  return { success: true };
 }
 
 export async function resolveTicket(user, ticketId, payload) {
@@ -209,8 +250,26 @@ export async function resolveTicket(user, ticketId, payload) {
 
   await query('BEGIN');
   try {
-    // Add comment before resolving
-    await commentOnTicket(user, ticketId, { comment, attachments });
+    // Insert resolve comment with action_type='resolved'
+    let commentId = null;
+    if (comment) {
+      const { rows } = await query(
+        `INSERT INTO ticket_comments (ticket_id, user_id, comment, action_type)
+        VALUES ($1,$2,$3,'resolved')
+        RETURNING id`,
+        [ticketId, user.id, comment]
+      );
+      commentId = rows[0].id;
+    }
+
+    // Add attachments linked to this comment
+    for (const url of attachments) {
+      await query(
+        `INSERT INTO attachments (ticket_id, comment_id, uploaded_by, url, kind)
+        VALUES ($1, $2, $3, $4, 'comment')`,
+        [ticketId, commentId, user.id, url]
+      );
+    }
 
     // Mark as resolved
     await query(`UPDATE tickets SET status='resolved', resolved_at=NOW(), updated_at=NOW() WHERE id=$1`, [ticketId]);
@@ -233,8 +292,27 @@ export async function escalateTicket(user, ticketId, payload) {
   const ticket = ticketRows[0];
   if (!ticket) throw new Error('Ticket not found');
 
-  // Add comment before escalation
-  await commentOnTicket(user, ticketId, { comment, attachments });
+  // Insert escalate comment with action_type='escalated'
+  let commentId = null;
+  if (comment) {
+    const { rows } = await query(
+      `INSERT INTO ticket_comments (ticket_id, user_id, comment, action_type)
+      VALUES ($1,$2,$3,'escalated')
+      RETURNING id`,
+      [ticketId, user.id, comment]
+    );
+    commentId = rows[0].id;
+  }
+
+  // Add attachments linked to this comment
+  for (const url of attachments) {
+    await query(
+      `INSERT INTO attachments (ticket_id, comment_id, uploaded_by, url, kind)
+      VALUES ($1, $2, $3, $4, 'comment')`,
+      [ticketId, commentId, user.id, url]
+    );
+  }
+
 
   // Determine next role via category
   const { rows: catRows } = await query('SELECT name FROM categories WHERE id=$1', [ticket.category_id]);

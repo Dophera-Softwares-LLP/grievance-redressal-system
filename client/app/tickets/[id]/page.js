@@ -90,6 +90,15 @@ export default function TicketDetailsPage() {
     ? ticket.attachments.filter(a => a.kind === 'ticket')
     : [];
 
+  // For comment attachments (we'll combine them temporarily)
+  function openViewerForComments(fileIndex, filesArray) {
+    // override current list with comment attachments list
+    // We temporarily treat them like ticketFiles
+    ticketFiles.splice(0, ticketFiles.length, ...filesArray);
+
+    setViewerIndex(fileIndex);
+    setViewerOpen(true);
+  }
   function openViewer(index) {
     setViewerIndex(index);
     setViewerOpen(true);
@@ -171,6 +180,93 @@ export default function TicketDetailsPage() {
                             style={{ objectFit: 'cover' }}
                           />
                         )}
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </>
+            )}
+            {/* ACTION HISTORY */}
+            {ticket.comments?.length > 0 && (
+              <>
+                <Divider />
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  Action History
+                </Typography>
+
+                <Stack spacing={3} sx={{ mt: 2 }}>
+                  {ticket.comments.map((c, ci) => {
+                    const commentFiles = c.attachments || [];
+                    const isResolve = c.action_type === "resolved";
+                    const isEscalate = c.action_type === "escalated";
+
+                    return (
+                      <Box
+                        key={c.id}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          backgroundColor: isResolve ? "#e8f5e9" : "#fff3e0",
+                          boxShadow: 1,
+                        }}
+                      >
+                        {/* Action header */}
+                        <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
+                          {isResolve ? "Resolved" : "Escalated"} by {c.user_name} ({c.role_name})
+                        </Typography>
+
+                        {/* Comment text */}
+                        <Typography sx={{ mt: 1, whiteSpace: "pre-line" }}>
+                          {c.comment}
+                        </Typography>
+
+                        {/* Comment attachments preview */}
+                        {commentFiles.length > 0 && (
+                          <Stack direction="row" spacing={2} sx={{ mt: 2, flexWrap: "wrap" }}>
+                            {commentFiles.map((file, fi) => {
+                              const isVideo = file.url.match(/\.(mp4|webm|mov)$/i);
+                              const previewWidth = isVideo ? 230 : 170;
+                              const previewHeight = isVideo ? 140 : 130;
+
+                              return (
+                                <Box
+                                  key={file.id}
+                                  onClick={() => openViewerForComments(fi, commentFiles)}
+                                  sx={{
+                                    cursor: "pointer",
+                                    position: "relative",
+                                    width: previewWidth,
+                                    height: previewHeight,
+                                    borderRadius: 2,
+                                    overflow: "hidden",
+                                    boxShadow: 2,
+                                  }}
+                                >
+                                  {isVideo ? (
+                                    <video
+                                      src={file.url}
+                                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                      muted
+                                    />
+                                  ) : (
+                                    <Image
+                                      src={file.url}
+                                      alt="Attachment"
+                                      fill
+                                      sizes="(max-width: 900px) 100vw"
+                                      style={{ objectFit: "cover" }}
+                                    />
+                                  )}
+                                </Box>
+                              );
+                            })}
+                          </Stack>
+                        )}
+
+                        {/* Timestamp */}
+                        <Typography sx={{ fontSize: 13, color: "gray", mt: 1 }}>
+                          {new Date(c.created_at).toLocaleString()}
+                        </Typography>
                       </Box>
                     );
                   })}
