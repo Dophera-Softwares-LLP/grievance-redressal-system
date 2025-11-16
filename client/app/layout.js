@@ -1,4 +1,5 @@
 'use client';
+import './globals.css';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { theme } from '../theme/mui-theme';
 import AppHeader from '../components/layout/AppHeader';
@@ -14,7 +15,9 @@ export default function RootLayout({ children }) {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           {!hideHeader && <AppHeader />}
-          <main>{children}</main>
+          <main style={{ minHeight: "100vh" }}>
+            {children}
+          </main>
         </ThemeProvider>
       </body>
     </html>
