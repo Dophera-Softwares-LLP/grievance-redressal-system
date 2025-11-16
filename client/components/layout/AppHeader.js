@@ -28,7 +28,7 @@ export default function AppHeader() {
   return (
     <AppBar position="sticky">
       <Toolbar>
-        <Typography sx={{ flexGrow: 1 }} variant="h6">Grievance</Typography>
+        <Typography sx={{ flexGrow: 1 }} variant="h6">Aawaz</Typography>
         {!user ? (
           <Button color="inherit" onClick={signInMicrosoft}>
             Sign in with Microsoft

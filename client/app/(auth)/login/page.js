@@ -161,6 +161,9 @@ export default function LoginPage() {
               py: 1.5,
               borderRadius: "10px",
               textTransform: "none",
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
             }}
           >
             {loading ? (
@@ -169,7 +172,14 @@ export default function LoginPage() {
                 Signing in…
               </>
             ) : (
-              "Sign in with Microsoft"
+              <>
+                <img
+                  src="/Microsoft-logo.svg"
+                  alt="Microsoft Logo"
+                  style={{ width: 20, height: 20 }}
+                />
+                Continue with Microsoft
+              </>
             )}
           </Button>
         </motion.div>
