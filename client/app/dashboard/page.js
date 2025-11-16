@@ -10,6 +10,7 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
+import DashboardSkeleton from "../../components/layout/DashboardSkeleton";
 import { useRouter } from "next/navigation";
 import { TicketsAPI } from "../../services/tickets";
 import Lottie from "lottie-react";
@@ -62,18 +63,7 @@ export default function DashboardPage() {
 
   // --- Loading / empty state ---
   if (loading || tickets === null) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "80vh",
-        }}
-      >
-        <Typography>Loading...</Typography>
-      </Box>
-    );
+    return <DashboardSkeleton />;
   }
 
   // --- No tickets yet ---

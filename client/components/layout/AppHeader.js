@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 
 export default function AppHeader() {
   const [user, setUser] = useState(auth.currentUser);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const glowRef = useRef(null);
 
@@ -34,8 +35,58 @@ export default function AppHeader() {
   }, [router]);
 
   async function handleLogout() {
-    await signOutUser();
-    router.push("/login");
+    setIsLoggingOut(true);
+
+    try {
+      await signOutUser();
+    } finally {
+      router.push("/login");
+    }
+  }
+
+  // 🔥 SHOW THIS WHILE LOGGING OUT
+  if (isLoggingOut) {
+    return (
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(180deg, #0a2a6b, #ffffff 35%)",
+          zIndex: 9999,
+        }}
+      >
+        <Box sx={{ width: "60%", maxWidth: 600 }}>
+          <Box sx={{ mb: 3 }}>
+            <Box
+              sx={{
+                height: 20,
+                width: "40%",
+                bgcolor: "rgba(255,255,255,0.4)",
+                borderRadius: 2,
+                animation: "pulse 1.2s ease-in-out infinite",
+              }}
+            />
+          </Box>
+
+          {[1, 2, 3].map((i) => (
+            <Box
+              key={i}
+              sx={{
+                height: 12,
+                width: `${100 - i * 10}%`,
+                bgcolor: "rgba(255,255,255,0.3)",
+                borderRadius: 2,
+                mb: 1.5,
+                animation: "pulse 1.2s ease-in-out infinite",
+              }}
+            />
+          ))}
+        </Box>
+      </Box>
+    );
   }
 
   return (
@@ -47,25 +98,25 @@ export default function AppHeader() {
         overflow: "hidden",
       }}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => glowRef.current.style.opacity = 0}
+      onMouseLeave={() => (glowRef.current.style.opacity = 0)}
     >
       {/* MAGIC GLOW EFFECT */}
       <Box
         ref={glowRef}
         sx={{
-          position: 'absolute',
+          position: "absolute",
           width: 280,
           height: 280,
-          borderRadius: '50%',
-          pointerEvents: 'none',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.25), transparent 70%)',
-          transform: 'translate(-50%, -50%)',
-          filter: 'blur(50px)',
+          borderRadius: "50%",
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle, rgba(255,255,255,0.25), transparent 70%)",
+          transform: "translate(-50%, -50%)",
+          filter: "blur(50px)",
           opacity: 0,
-          transition: 'opacity 0.25s ease-out',
+          transition: "opacity 0.25s ease-out",
         }}
       />
-
 
       <Toolbar
         component={motion.div}

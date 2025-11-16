@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import TicketDetailsSkeleton from "../../../components/layout/TicketDetailsSkeleton";
 import { useParams, useRouter } from 'next/navigation';
 import {
   Box, Typography, Card, CardContent, Stack, Divider, CircularProgress, Button
@@ -85,11 +86,7 @@ export default function TicketDetailsPage() {
   }, [id, router]);
 
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh' }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <TicketDetailsSkeleton />;
   }
 
   if (!ticket) {
