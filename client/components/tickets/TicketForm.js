@@ -51,7 +51,7 @@ export default function TicketForm({ onSubmit }) {
 
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>
-      <Typography variant="h4" align="center" sx={{ fontWeight: 700, mb: 3 }}>
+      <Typography variant="h4" align="center" sx={{ fontWeight: 700, mb: 3, color: "#f1f5f9" }}>
         Raise a Ticket
       </Typography>
 

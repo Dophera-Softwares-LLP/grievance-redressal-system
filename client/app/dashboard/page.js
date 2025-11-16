@@ -80,10 +80,25 @@ export default function DashboardPage() {
   if (!tickets.length) {
     return (
       <Box sx={{ textAlign: "center", py: 8 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 800,
+            mb: 1,
+            color: "#f1f5f9",   // <— bright white-blue
+          }}
+        >
           {role === "student" ? "Welcome to Aawaz" : "No Tickets Assigned Yet"}
         </Typography>
-        <Typography variant="h6" sx={{ mb: 3 }}>
+
+        <Typography
+          variant="h6"
+          sx={{
+            mb: 3,
+            color: "#cbd5e1",   // <— soft light gray-blue
+            fontWeight: 500,
+          }}
+        >
           {role === "student"
             ? "Bridging voices and solutions"
             : "Once a student raises a ticket under your category, it will appear here."}
@@ -93,10 +108,23 @@ export default function DashboardPage() {
             <Box sx={{ maxWidth: 400, mx: "auto", mb: 4 }}>
               <Lottie animationData={welcomeAnim} loop={true} />
             </Box>
+
             <Button
               variant="contained"
               size="large"
-              sx={{ borderRadius: 5, px: 6, fontWeight: 600 }}
+              sx={{
+                borderRadius: 3,
+                px: 6,
+                py: 1.2,
+                fontWeight: 700,
+                textTransform: "none",
+                background: "linear-gradient(90deg, #3b82f6, #0ea5e9)",
+                color: "#fff",
+                "&:hover": {
+                  background: "linear-gradient(90deg, #2563eb, #0284c7)",
+                  transform: "translateY(-2px)",
+                },
+              }}
               onClick={() => router.push("/tickets/new")}
             >
               Raise New Ticket
@@ -106,6 +134,7 @@ export default function DashboardPage() {
       </Box>
     );
   }
+
 
   const glassMenuProps = {
     PaperProps: {
